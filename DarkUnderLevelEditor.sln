@@ -1,0 +1,29 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.27004.2006
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DarkUnderLevelEditor", "DarkUnderLevelEditor\DarkUnderLevelEditor.csproj", "{A9B8CD4D-531E-4CB5-9D65-8EF55551B982}"
+EndProject
+Project("{54435603-DBB4-11D2-8724-00A0C9A8B90C}") = "Setup", "Setup\Setup.vdproj", "{C4F46BA3-56BA-4142-ACE6-E60183B42301}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|x86 = Debug|x86
+		Release|x86 = Release|x86
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{A9B8CD4D-531E-4CB5-9D65-8EF55551B982}.Debug|x86.ActiveCfg = Debug|x86
+		{A9B8CD4D-531E-4CB5-9D65-8EF55551B982}.Debug|x86.Build.0 = Debug|x86
+		{A9B8CD4D-531E-4CB5-9D65-8EF55551B982}.Release|x86.ActiveCfg = Release|x86
+		{A9B8CD4D-531E-4CB5-9D65-8EF55551B982}.Release|x86.Build.0 = Release|x86
+		{C4F46BA3-56BA-4142-ACE6-E60183B42301}.Debug|x86.ActiveCfg = Debug
+		{C4F46BA3-56BA-4142-ACE6-E60183B42301}.Release|x86.ActiveCfg = Release
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {70920B92-5512-4D93-8E10-9073D7E83FE2}
+	EndGlobalSection
+EndGlobal
