@@ -1666,10 +1666,6 @@ namespace DarkUnderLevelEditor {
                         }
                         file.WriteLine("");
                     }
-                    else
-                    {
-                        file.WriteLine(",");
-                    }
                 }
                 file.WriteLine("};");
                 file.WriteLine();
