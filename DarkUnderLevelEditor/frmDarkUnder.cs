@@ -436,6 +436,9 @@ namespace DarkUnderLevelEditor {
                 dgSaveMapData.FileName = dgOpenMapData.FileName;
                 lblFileName.Text = dgOpenMapData.FileName;
                 lblFileName.Visible = true;
+                txtEOGImage.Text = "";
+                txtEOGMessage.Text = "";
+                chkMultiGame.Checked = false;
 
                 const string userRoot = "HKEY_CURRENT_USER";
                 const string subkey = "DarkUnder";
@@ -446,6 +449,15 @@ namespace DarkUnderLevelEditor {
 
                 foreach (String line in lines) {
 
+                    if (counter == 14) {
+                        if (line == "};") {
+                            counter = 0;
+                        }
+                        else {
+                            txtEOGImage.Text = txtEOGImage.Text + (txtEOGImage.Text.Length > 0 ? Environment.NewLine : "") + line;
+                        }
+                    }
+
                     if (counter == 13) {
 
                         Byte[,] tileDataSet = new Byte[17, 17];
@@ -454,10 +466,8 @@ namespace DarkUnderLevelEditor {
 
                         int i = 0;
 
-                        for (int y = 0; y < newLevel.levelDimensionY; y++) 
-                        {
-                            for (int x = 0; x < newLevel.levelDimensionX; x++)
-                            {
+                        for (int y = 0; y < newLevel.levelDimensionY; y++) {
+                            for (int x = 0; x < newLevel.levelDimensionX; x++) {
                                 tileDataSet[y, x] = Byte.Parse(data[i]);
                                 ++i;
                                 if (i >= data.Length) break;
@@ -785,6 +795,25 @@ namespace DarkUnderLevelEditor {
                         if (newLine.StartsWith("#define ENEMY_SLIME_XP")) { udSlime_XP.Value = int.Parse(newLine.Substring(newLine.LastIndexOf(" ") + 1)); }
                         if (newLine.StartsWith("#define ENEMY_SLIME_MV")) { chkSlime_MV.Checked = (newLine.Substring(newLine.LastIndexOf(" ") + 1) == "false"); }
 
+                    }
+
+                    if (line.StartsWith("#define ALTERNATIVE_ENDING")) { chkMultiGame.Checked = true; }
+                    if (line.StartsWith("#define ALTERNATE_ENDING_TEXT_POS_X")) { String newLine = line.Trim(); udEOGTextPosX.Value = int.Parse(newLine.Substring(newLine.LastIndexOf(" ") + 1)); }
+                    if (line.StartsWith("#define ALTERNATE_ENDING_TEXT_POS_Y")) { String newLine = line.Trim(); udEOGTextPosY.Value = int.Parse(newLine.Substring(newLine.LastIndexOf(" ") + 1)); }
+                    if (line.StartsWith("#define ALTERNATE_ENDING_IMAGE_POS_X")) { String newLine = line.Trim(); udEOGImagePosX.Value = int.Parse(newLine.Substring(newLine.LastIndexOf(" ") + 1)); }
+                    if (line.StartsWith("#define ALTERNATE_ENDING_IMAGE_POS_Y")) { String newLine = line.Trim(); udEOGImagePosY.Value = int.Parse(newLine.Substring(newLine.LastIndexOf(" ") + 1)); }
+                    if (line.StartsWith("#define ALTERNATE_ENDING_PREFIX")) { String newLine = line.Trim(); udGamePrefix.Value = int.Parse(newLine.Substring(newLine.LastIndexOf(" ") + 1)); }
+                    if (line.StartsWith("#define ALTERNATE_ENDING_SEQ")) { String newLine = line.Trim(); udGameSequence.Value = int.Parse(newLine.Substring(newLine.LastIndexOf(" ") + 1)); }
+
+                    if (line.StartsWith("const char endingText[] PROGMEM = \"")) {
+
+                        String newLine = line.Trim().Replace("\\n", Environment.NewLine);
+                        txtEOGMessage.Text = newLine.Substring(35, newLine.Length - 37);
+
+                    }
+
+                    if (line.StartsWith("const uint8_t alternate_image[] PROGMEM = {")) { 
+                        counter = 14;
                     }
 
                 }
@@ -1602,6 +1631,23 @@ namespace DarkUnderLevelEditor {
                 file.WriteLine("#pragma once");
                 file.WriteLine();
 
+                if (chkMultiGame.Checked) {
+
+                    file.WriteLine("#define ALTERNATIVE_ENDING");
+                    file.WriteLine("#define ALTERNATE_ENDING_TEXT_POS_X {0}", udEOGTextPosX.Value);
+                    file.WriteLine("#define ALTERNATE_ENDING_TEXT_POS_Y {0}", udEOGTextPosY.Value);
+                    file.WriteLine("#define ALTERNATE_ENDING_IMAGE_POS_X {0}", udEOGImagePosX.Value);
+                    file.WriteLine("#define ALTERNATE_ENDING_IMAGE_POS_Y {0}", udEOGImagePosY.Value);
+                    file.WriteLine("#define ALTERNATE_ENDING_PREFIX {0}", udGamePrefix.Value);
+                    file.WriteLine("#define ALTERNATE_ENDING_SEQ {0}", udGameSequence.Value);
+
+                    file.WriteLine("const char endingText[] PROGMEM = \"" + txtEOGMessage.Text.Replace(Environment.NewLine, "\\n") + "\";");
+                    file.WriteLine("const uint8_t alternate_image[] PROGMEM = {\n" + txtEOGImage.Text + "\n};");
+
+                }
+
+
+
                 file.WriteLine("#define MAX_LEVEL_COUNT {0}", levels.Count);
 
                 if (chkAllowSaveGame.Checked) {
@@ -1999,6 +2045,60 @@ namespace DarkUnderLevelEditor {
 
         }
 
+        private void txtEOGMessage_TextChanged(object sender, EventArgs e) {
+
+            if (txtEOGMessage.Text.Any(char.IsLower)) {
+                var selected = txtEOGMessage.SelectionStart;
+                txtEOGMessage.Text = txtEOGMessage.Text.ToUpper();
+                txtEOGMessage.SelectionStart = selected;
+            }
+
+        }
+
+        private void txtEOGMessage_Enter(object sender, EventArgs e) {
+
+            txtEOGMessage.SelectionStart = 0;
+            txtEOGMessage.SelectionLength = txtEOGMessage.Text.Length;
+
+        }
+
+        private void txtEOGMessage_Leave(object sender, EventArgs e) {
+            txtEOGMessage.Text = txtEOGMessage.Text.TrimEnd();
+        }
+
+        private void txtEOGMessage_KeyPress(object sender, KeyPressEventArgs e) {
+
+            if (e.KeyChar != (Char)Keys.Back && e.KeyChar != (Char)Keys.Enter) {
+
+                if (System.Text.RegularExpressions.Regex.IsMatch(e.KeyChar.ToString(), @"[^0-9^A-Z^a-z^\.^\!^ ]")) {
+                    e.Handled = true;
+                }
+
+            }
+
+        }
+
+        private void chkMultiGame_CheckedChanged(object sender, EventArgs e) {
+
+            lblGamePrefix.Enabled = (chkMultiGame.Checked);
+            udGamePrefix.Enabled = (chkMultiGame.Checked);
+            lblGameSequence.Enabled = (chkMultiGame.Checked);
+            udGameSequence.Enabled = (chkMultiGame.Checked);
+            lblEOGDetails.Enabled = (chkMultiGame.Checked);
+            lblEOGMessage.Enabled = (chkMultiGame.Checked);
+            txtEOGMessage.Enabled = (chkMultiGame.Checked);
+            lblEOGTextPosX.Enabled = (chkMultiGame.Checked);
+            udEOGTextPosX.Enabled = (chkMultiGame.Checked);
+            lblEOGTextPosY.Enabled = (chkMultiGame.Checked);
+            udEOGTextPosY.Enabled = (chkMultiGame.Checked);
+            lblEOGImage.Enabled = (chkMultiGame.Checked);
+            txtEOGImage.Enabled = (chkMultiGame.Checked);
+            lblEOGImagePosX.Enabled = (chkMultiGame.Checked);
+            udEOGImagePosX.Enabled = (chkMultiGame.Checked);
+            lblEOGImagePosY.Enabled = (chkMultiGame.Checked);
+            udEOGImagePosY.Enabled = (chkMultiGame.Checked);
+
+        }
     }
 
 }
