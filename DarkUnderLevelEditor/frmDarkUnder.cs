@@ -411,6 +411,7 @@ namespace DarkUnderLevelEditor {
             Tile newTile = null;
             Level newLevel = null;
 
+            bool tileLine = false;
             int counter = 0;
             int numberOfEnemies = 0;
             int numberOfItems = 0;
@@ -623,23 +624,31 @@ namespace DarkUnderLevelEditor {
 
                     }
 
-                    if (counter == 1) {
+                    //if (counter == 1) {
 
-                        tileData = new Byte[30];
-                        String newLine = line.Replace(" ", "");
-                        String[] data = newLine.Split(new String[] { "," }, StringSplitOptions.RemoveEmptyEntries);
+                    //    tileData = new Byte[30];
+                    //    String newLine = line.Replace(" ", "");
+                    //    String[] data = newLine.Split(new String[] { "," }, StringSplitOptions.RemoveEmptyEntries);
 
-                        for (int i = 0; i < 30; i++) {
-                            tileData[i] = Convert.ToByte(data[i], 16);
-                        }
+                    //    for (int i = 0; i < 30; i++) {
+                    //        tileData[i] = Convert.ToByte(data[i], 16);
+                    //    }
 
-                        newTile.Data = tileData;
-                        counter = 0;
-                        mnuAddTiles.DropDownItems[newTile.Index].Image = newTile.GetImage();
+                    //    newTile.Data = tileData;
+                    //    counter = 0;
+                    //    mnuAddTiles.DropDownItems[newTile.Index].Image = newTile.GetImage();
 
+                    //}
+
+                    if (line.StartsWith("const uint8_t PROGMEM tiles") && !line.Trim().EndsWith("{};")) {
+                        tileLine = true;
                     }
 
-                    if (line.StartsWith("const uint8_t PROGMEM tile_") && !line.Trim().EndsWith("{};")) {
+                    if (tileLine && (line.Trim() == "};")) {
+                        tileLine = false;
+                    }
+
+                    if (tileLine && line.Trim().Length == 179) { 
 
                         newTile = new Tile();
                         newTile.Title = "Tile " + (tileCount < 10 ? "0" : "") + tileCount;
@@ -656,7 +665,21 @@ namespace DarkUnderLevelEditor {
                         mnuAddTiles.DropDownItems.Add(menuItem);
 
                         tileCount++;
-                        counter = 1;
+//                        counter = 1;
+
+
+                        tileData = new Byte[30];
+                        String newLine = line.Replace(" ", "");
+                        String[] data = newLine.Split(new String[] { "," }, StringSplitOptions.RemoveEmptyEntries);
+
+                        for (int i = 0; i < 30; i++) {
+                            tileData[i] = Convert.ToByte(data[i], 16);
+                        }
+
+                        newTile.Data = tileData;
+ //                       counter = 0;
+                        mnuAddTiles.DropDownItems[newTile.Index].Image = newTile.GetImage();
+
 
                     }
 
@@ -1632,22 +1655,19 @@ namespace DarkUnderLevelEditor {
                 file.WriteLine();
 
                 // Tiles
-                for(int i = 0; i < NUMBER_OF_TILES; ++i)
+                file.WriteLine("const uint8_t PROGMEM tiles[] = {");
+                for (int i = 0; i < NUMBER_OF_TILES; ++i)
                 {
                     if(i < tiles.Count)
                     {
-                        file.WriteLine("const uint8_t PROGMEM tile_{0:D2}[] = {{", i);
                         for (int j = 0; j < 30; ++j)
                         {
                             file.Write("0x{0:X2}, ", tiles[i].Data[j]);
                         }
-                        file.WriteLine("\n};");
-                    }
-                    else
-                    {
-                        file.WriteLine("const uint8_t PROGMEM tile_{0:D2}[] = {{}};", i);
+                        file.WriteLine("");
                     }
                 }
+                file.WriteLine("};");
                 file.WriteLine();
 
 
