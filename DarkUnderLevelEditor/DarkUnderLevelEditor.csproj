@@ -46,6 +46,8 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="BitReader.cs" />
+    <Compile Include="BitWriter.cs" />
     <Compile Include="Entities\LevelBase.cs" />
     <Compile Include="Entities\LevelError.cs" />
     <Compile Include="frmAboutBox.cs">

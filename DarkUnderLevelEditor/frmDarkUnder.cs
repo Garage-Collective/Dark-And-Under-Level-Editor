@@ -411,6 +411,7 @@ namespace DarkUnderLevelEditor {
             Tile newTile = null;
             Level newLevel = null;
 
+            StringBuilder eogImage = new StringBuilder();
             bool tileLine = false;
             int counter = 0;
             int numberOfEnemies = 0;
@@ -433,10 +434,10 @@ namespace DarkUnderLevelEditor {
             if (dgOpenMapData.ShowDialog() == DialogResult.OK) {
 
                 clearLevels();
+                picTest.Tag = null;
                 dgSaveMapData.FileName = dgOpenMapData.FileName;
                 lblFileName.Text = dgOpenMapData.FileName;
                 lblFileName.Visible = true;
-                txtEOGImage.Text = "";
                 txtEOGMessage.Text = "";
                 chkMultiGame.Checked = false;
 
@@ -450,12 +451,19 @@ namespace DarkUnderLevelEditor {
                 foreach (String line in lines) {
 
                     if (counter == 14) {
+
                         if (line == "};") {
+
                             counter = 0;
+                            LoadEOGImage(eogImage.ToString(), picTest);
+                            LoadEOGImage(eogImage.ToString(), picImage);
+                            picTest.Tag = true;
+
                         }
                         else {
-                            txtEOGImage.Text = txtEOGImage.Text + (txtEOGImage.Text.Length > 0 ? Environment.NewLine : "") + line;
+                            eogImage = eogImage.Append(line);
                         }
+
                     }
 
                     if (counter == 13) {
@@ -477,7 +485,7 @@ namespace DarkUnderLevelEditor {
                         }
 
                         newLevel.tileData = tileDataSet;
-                        counter++;
+                        counter = 0;
 
                     }
 
@@ -1621,6 +1629,7 @@ namespace DarkUnderLevelEditor {
 
         }
 
+        
         private void saveMapData(String fileName) {
 
             using (System.IO.StreamWriter file = new System.IO.StreamWriter(fileName)) {
@@ -1642,7 +1651,9 @@ namespace DarkUnderLevelEditor {
                     file.WriteLine("#define ALTERNATE_ENDING_SEQ {0}", udGameSequence.Value);
 
                     file.WriteLine("const char endingText[] PROGMEM = \"" + txtEOGMessage.Text.Replace(Environment.NewLine, "\\n") + "\";");
-                    file.WriteLine("const uint8_t alternate_image[] PROGMEM = {\n" + txtEOGImage.Text + "\n};");
+                    file.WriteLine("const uint8_t alternate_image[] PROGMEM = {");
+                    file.WriteLine(SaveEOGImage());
+                    file.WriteLine("};");
 
                 }
 
@@ -1823,6 +1834,46 @@ namespace DarkUnderLevelEditor {
             int errorCount = 0;
             tvwErrors.Nodes.Clear();
             lblStatusError.Text = "";
+
+            if (chkMultiGame.Checked) {
+
+                List<LevelError> errors = new List<LevelError>();
+
+                if (txtEOGMessage.Text.Replace(Environment.NewLine, "").Trim() == "") {
+
+                    LevelError levelError = new LevelError();
+                    levelError.error = "An 'end of game' message must be entered.";
+                    errors.Add(levelError);
+
+                }
+
+                if (picTest.Tag == null) {
+
+                    LevelError levelError = new LevelError();
+                    levelError.error = "An 'end of game' imagemust be selected.";
+                    errors.Add(levelError);
+
+                }
+
+                if (errors.Count > 0) {
+
+                    TreeNode node = tvwErrors.Nodes.Add("Multi game settings");
+
+                    foreach (LevelError levelError in errors) {
+
+                        TreeNode child = node.Nodes.Add(levelError.error);
+                        child.Tag = levelError;
+                        child.SelectedImageIndex = (int)Images.Error;
+                        child.ImageIndex = (int)Images.Error;
+
+                    }
+
+                }
+
+                errorCount = errorCount + errors.Count;
+
+            }
+
 
             foreach (Level level in levels) {
 
@@ -2053,6 +2104,8 @@ namespace DarkUnderLevelEditor {
                 txtEOGMessage.SelectionStart = selected;
             }
 
+            validateDungeons();
+
         }
 
         private void txtEOGMessage_Enter(object sender, EventArgs e) {
@@ -2084,7 +2137,6 @@ namespace DarkUnderLevelEditor {
             udGamePrefix.Enabled = (chkMultiGame.Checked);
             lblGameSequence.Enabled = (chkMultiGame.Checked);
             udGameSequence.Enabled = (chkMultiGame.Checked);
-            lblEOGDetails.Enabled = (chkMultiGame.Checked);
             lblEOGMessage.Enabled = (chkMultiGame.Checked);
             txtEOGMessage.Enabled = (chkMultiGame.Checked);
             lblEOGTextPosX.Enabled = (chkMultiGame.Checked);
@@ -2092,13 +2144,276 @@ namespace DarkUnderLevelEditor {
             lblEOGTextPosY.Enabled = (chkMultiGame.Checked);
             udEOGTextPosY.Enabled = (chkMultiGame.Checked);
             lblEOGImage.Enabled = (chkMultiGame.Checked);
-            txtEOGImage.Enabled = (chkMultiGame.Checked);
             lblEOGImagePosX.Enabled = (chkMultiGame.Checked);
             udEOGImagePosX.Enabled = (chkMultiGame.Checked);
             lblEOGImagePosY.Enabled = (chkMultiGame.Checked);
             udEOGImagePosY.Enabled = (chkMultiGame.Checked);
+            cmdLoadImage.Enabled = (chkMultiGame.Checked);
+            lblMultiDesc.Enabled = (chkMultiGame.Checked);
+            lblMultiDescArrow1.Enabled = (chkMultiGame.Checked);
+            lblMultiDescArrow2.Enabled = (chkMultiGame.Checked);
+            picImage.BackColor = (chkMultiGame.Checked ? Color.Transparent : SystemColors.ControlLight);
+            lblEOGDetails.BackColor = (chkMultiGame.Checked ? SystemColors.MenuHighlight : SystemColors.InactiveCaption);
+
+            validateDungeons();
 
         }
+
+        private void LoadEOGImage(String data, PictureBox pictureBox) {
+
+            var buffer = data.Replace(Environment.NewLine, "").Split(',').Select(Byte.Parse).ToArray();
+
+            byte bit;
+            bool eof = false;
+            int x = 0;
+            int y = 0;
+            Bitmap b = null;
+            Graphics g = null;
+
+            using (var stream = new MemoryStream(buffer))
+            using (var reader = new BitReader(stream)) {
+
+                int width = reader.ReadBits(8) + 1;
+                int height = reader.ReadBits(8) + 1;
+                int row = 0;
+
+                reader.Read(out bit);
+                var startingColor = bit;
+
+                b = new Bitmap(width, height);
+                g = Graphics.FromImage(b);
+
+                g.FillRectangle(Brushes.White, 0, 0, pictureBox.Width, pictureBox.Height);
+
+                while (!eof) {
+
+                    int bitsToRead = 1;
+
+                    while (true) {
+
+                        eof = !reader.Read(out bit);
+
+                        if (!eof) {
+
+                            if (bit == 0) {
+                                bitsToRead = bitsToRead + 2;
+                            }
+                            else {
+                                break;
+                            }
+
+                        }
+                        else {
+                            break; //End of File
+                        }
+
+                    }
+
+                    int spanLength = reader.ReadBits(bitsToRead) + 1;
+
+                    for (int z = 0; z < spanLength; z++) {
+
+                        if (startingColor == 0) {
+
+                            g.FillRectangle(Brushes.Black, x, y, 1, 1);
+                        }
+
+                        y = y + 1;
+                        if (y == row + 8) {
+
+                            y = row;
+                            x++;
+
+                            if (x >= width) {
+                                row = row + 8;
+                                y = row;
+                                x = 0;
+                            }
+
+                        }
+
+                    }
+
+                    startingColor = (startingColor == 1 ? (byte)0 : (byte)1);
+
+
+                }
+
+
+
+            }
+
+            pictureBox.Image = b;
+
+        }
+
+        private void cmdLoadImage_Click(object sender, EventArgs e) {
+
+            Bitmap origBitmap = (Bitmap)picTest.Image;
+
+            StringBuilder errorMessage = new StringBuilder();
+
+            if (dgOpenImage.ShowDialog() == DialogResult.OK) {
+
+                try {
+
+                    picTest.Image = Image.FromFile(dgOpenImage.FileName);
+
+                    if (picTest.Image.Size.Width > 128) { errorMessage.Append("\nImage width cannot exceed 128 bits"); }
+                    if (picTest.Image.Size.Width > 64) { errorMessage.Append("\nImage height cannot exceed 64 bits"); }
+                    if (picTest.Image.Size.Height % 8 != 0) { errorMessage.Append("\nImage height must be a multiple of 8."); }
+
+                    if (errorMessage.Length == 0) {
+
+                        picImage.Image = makeBlackAndWhite((Bitmap)picTest.Image);
+                        picTest.Tag = true;
+
+                    }
+                    else {
+
+                        MessageBox.Show("The selected image cannot be loaded.\n" + errorMessage.ToString(), "Error Loading Image", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        picTest.Image = origBitmap;
+
+                    }
+
+                }
+                catch (Exception) {
+                    MessageBox.Show("Unable to load to the selected file.", "Error oading file", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+
+                validateDungeons();
+
+            }
+
+        }
+
+        private String SaveEOGImage() {
+
+
+
+            try {
+
+                MemoryStream memoryStream = new MemoryStream();
+                BitWriter bitWriter = new BitWriter(memoryStream);
+
+                int x = 0;
+                int y = 0;
+                int row = 0;
+
+                Bitmap img = (Bitmap)picTest.Image;
+                Color color = img.GetPixel(0, 0);
+                //int b = 1;
+                int spanLength = 0;
+
+                bitWriter.ReverseBytes = false;
+                bitWriter.Write(Convert.ToString(img.Width - 1, 2).PadLeft(8, '0'));
+                bitWriter.Write(Convert.ToString(img.Height - 1, 2).PadLeft(8, '0'));
+                bitWriter.ReverseBytes = true;
+
+                bitWriter.Write((color == Color.White));
+
+                while (y < img.Height) {
+
+                    Color c = img.GetPixel(x, y);
+
+                    if (c.ToArgb() == color.ToArgb()) {
+                        spanLength++;
+                    }
+                    else {
+
+                        String spanLengthStr = Convert.ToString(spanLength - 1, 2);
+                        if (spanLengthStr.Length % 2 == 0) { spanLengthStr = "0" + spanLengthStr; }
+
+                        String bitsToRead = "1" + new String('0', spanLengthStr.Length / 2);
+
+
+                        Console.Out.Write(bitsToRead);
+                        Console.Out.Write(" ");
+                        Console.Out.WriteLine(spanLength);
+
+
+                        bitWriter.Write(Reverse(bitsToRead));
+                        bitWriter.Write(Reverse(spanLengthStr));
+
+                        spanLength = 1;
+                        color = (color == Color.White ? Color.Black : Color.White);
+
+                    }
+
+                    y++;
+                    if (y == row + 8) {
+                        y = row;
+                        x++;
+
+                        if (x >= img.Width) {
+                            row = row + 8;
+                            y = row;
+                            x = 0;
+                        }
+
+                    }
+
+                }
+
+                {
+                    String spanLengthStr = Convert.ToString(spanLength - 1, 2);
+                    if (spanLengthStr.Length % 2 == 0) { spanLengthStr = "0" + spanLengthStr; }
+
+                    String bitsToRead = "1" + new String('0', spanLengthStr.Length / 2);
+
+                    bitWriter.Write(Reverse(bitsToRead));
+                    bitWriter.Write(Reverse(spanLengthStr));
+
+                }
+
+                bitWriter.Flush();
+                bitWriter.Close();
+
+                return Encoding.ASCII.GetString(memoryStream.ToArray());
+
+            }
+            catch (IOException) {
+
+                return "";
+
+            }
+
+        }
+
+        private string Reverse(string s) {
+
+            char[] charArray = s.ToCharArray();
+            Array.Reverse(charArray);
+            return new string(charArray);
+
+
+        }
+
+        private Bitmap makeBlackAndWhite(Bitmap original) {
+
+            Bitmap output = new Bitmap(original.Width, original.Height);
+
+            for (int i = 0; i < original.Width; i++) {
+
+                for (int j = 0; j < original.Height; j++) {
+
+                    Color c = original.GetPixel(i, j);
+
+                    int average = ((c.R + c.B + c.G) / 3);
+
+                    if (average < 200)
+                        output.SetPixel(i, j, Color.Black);
+
+                    else
+                        output.SetPixel(i, j, Color.White);
+
+                }
+            }
+
+            return output;
+
+        }
+
     }
 
 }
