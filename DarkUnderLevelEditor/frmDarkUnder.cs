@@ -826,6 +826,9 @@ namespace DarkUnderLevelEditor {
 
                 }
 
+
+                validateDungeons();
+
             }
 
             cmdTileAdd.Enabled = (tileCount != NUMBER_OF_TILES);
@@ -1850,7 +1853,7 @@ namespace DarkUnderLevelEditor {
                 if (picTest.Tag == null) {
 
                     LevelError levelError = new LevelError();
-                    levelError.error = "An 'end of game' imagemust be selected.";
+                    levelError.error = "An 'end of game' image must be selected.";
                     errors.Add(levelError);
 
                 }
@@ -1919,11 +1922,11 @@ namespace DarkUnderLevelEditor {
 
             if (e.Node.Tag != null) {
 
-                tabs.SelectedTab = tabLevelEditor;
-
                 LevelError levelError = (LevelError)e.Node.Tag;
 
-                if (levelError.node.Tag is Level) {
+                if (levelError.node != null && levelError.node.Tag is Level) {
+
+                    tabs.SelectedTab = tabLevelEditor;
 
                     tvwLevels.SelectedNode = levelError.node;
                     levelError.node.EnsureVisible();
@@ -1933,13 +1936,24 @@ namespace DarkUnderLevelEditor {
 
                 else {
 
-                    if (selectedLevelNode == null && selectedLevelNode != Utils.getRootNode(levelError.node)) {
-                        tvwLevels.SelectedNode = Utils.getRootNode(levelError.node);
-                    }
+                    if (levelError.node != null) {
 
-                    levelError.node.EnsureVisible();
-                    tvwLevels.SelectedNode = levelError.node;
-                    lblStatusError.Text = levelError.error;
+                        tabs.SelectedTab = tabLevelEditor;
+
+                        if (selectedLevelNode == null && selectedLevelNode != Utils.getRootNode(levelError.node)) {
+                            tvwLevels.SelectedNode = Utils.getRootNode(levelError.node);
+                        }
+
+                        levelError.node.EnsureVisible();
+                        tvwLevels.SelectedNode = levelError.node;
+                        lblStatusError.Text = levelError.error;
+
+                    }
+                    else {
+
+                        tabs.SelectedTab = tabMulti;
+
+                    }
 
                 }
 
