@@ -2274,7 +2274,7 @@ namespace DarkUnderLevelEditor {
                     picTest.Image = Image.FromFile(dgOpenImage.FileName);
 
                     if (picTest.Image.Size.Width > 128) { errorMessage.Append("\nImage width cannot exceed 128 bits"); }
-                    if (picTest.Image.Size.Width > 64) { errorMessage.Append("\nImage height cannot exceed 64 bits"); }
+                    if (picTest.Image.Size.Height > 64) { errorMessage.Append("\nImage height cannot exceed 64 bits"); }
                     if (picTest.Image.Size.Height % 8 != 0) { errorMessage.Append("\nImage height must be a multiple of 8."); }
 
                     if (errorMessage.Length == 0) {
@@ -2316,7 +2316,8 @@ namespace DarkUnderLevelEditor {
 
                 Bitmap img = (Bitmap)picTest.Image;
                 Color color = img.GetPixel(0, 0);
-                //int b = 1;
+                color = (color.B == 255 && color.R == 255 & color.G == 255 ? Color.White : Color.Black) ;
+
                 int spanLength = 0;
 
                 bitWriter.ReverseBytes = false;
@@ -2324,7 +2325,7 @@ namespace DarkUnderLevelEditor {
                 bitWriter.Write(Convert.ToString(img.Height - 1, 2).PadLeft(8, '0'));
                 bitWriter.ReverseBytes = true;
 
-                bitWriter.Write((color == Color.White));
+                bitWriter.Write(color == Color.White);
 
                 while (y < img.Height) {
 

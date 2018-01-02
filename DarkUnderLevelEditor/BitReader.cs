@@ -47,8 +47,17 @@ namespace DarkUnderLevelEditor {
                 buffer[i] = (bit == 1);
             }
 
-            byte[] bytes = new byte[1];
+//            byte[] bytes = new byte[1];
+            int[] bytes = new int[1];
             buffer.CopyTo(bytes, 0);
+            var sb = new StringBuilder();
+
+            for (int i = 0; i < buffer.Count; i++) {
+                char c = buffer[i] ? '1' : '0';
+                sb.Append(c);
+            }
+            Console.Out.WriteLine(sb.ToString());
+
             return bytes[0];
 
         }
